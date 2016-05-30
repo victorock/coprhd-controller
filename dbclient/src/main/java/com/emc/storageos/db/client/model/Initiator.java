@@ -4,6 +4,8 @@
  */
 package com.emc.storageos.db.client.model;
 
+import java.net.URI;
+
 import com.emc.storageos.db.client.util.EndpointUtility;
 import com.emc.storageos.db.client.util.WWNUtility;
 import com.emc.storageos.db.client.util.iSCSIUtility;
@@ -24,6 +26,10 @@ public class Initiator extends HostInterface implements Comparable<Initiator> {
     private volatile int hashCode;
     // COP-18937: Initiator may be registered to multiple storage systems using different names.
     private StringMap initiatorNames;
+    
+    private String initiatorType;
+    
+    private URI activeInitiatorId;
 
     /**
      * Default Constructor. This is the constructor used by the API.
@@ -203,7 +209,27 @@ public class Initiator extends HostInterface implements Comparable<Initiator> {
         return initiatorName != null ? initiatorName : getLabel();
     }
 
-    @Override
+    @Name("initiatortype")    
+    public String getInitiatorType() {
+		return initiatorType;
+	}
+
+	public void setInitiatorType(String initiatorType) {
+		this.initiatorType = initiatorType;
+		setChanged("initiatortype");
+	}
+	
+	@Name("activeinitiator")
+	public URI getActiveInitiatorId() {
+		return activeInitiatorId;
+	}
+
+	public void setActiveInitiatorId(URI activeInitiatorId) {
+		this.activeInitiatorId = activeInitiatorId;
+		setChanged("activeinitiator");
+	}
+
+	@Override
     public final String toString() {
         return String.format(
                 "Initiator(Protocol:%s, Node:%s, Port:%s, Host Name: %s, Cluster Name: %s)",
@@ -236,6 +262,11 @@ public class Initiator extends HostInterface implements Comparable<Initiator> {
             portNetworkId = WWNUtility.getWWNWithColons(port);
         }
         return portNetworkId;
+    }
+    
+    public enum InitiatorType {
+        active,
+        passive
     }
 
     @Override

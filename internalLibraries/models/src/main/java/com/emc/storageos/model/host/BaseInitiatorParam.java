@@ -4,8 +4,11 @@
  */
 package com.emc.storageos.model.host;
 
-import com.emc.storageos.model.valid.Endpoint;
+import java.net.URI;
+
 import javax.xml.bind.annotation.XmlElement;
+
+import com.emc.storageos.model.valid.Endpoint;
 
 /**
  * Captures POST data for a host initiator.
@@ -16,6 +19,8 @@ public class BaseInitiatorParam {
     private String node;
     private String port;
     private String name;
+    private String initiatorType;
+    private URI activeInitiatorPort;
 
     public BaseInitiatorParam() {
     }
@@ -30,8 +35,8 @@ public class BaseInitiatorParam {
     /**
      * The protocols supported by the initiator which should be FC or iSCSI
      * Valid values:
-     *   FC
-     *   iSCSI
+     * FC
+     * iSCSI
      */
     // @EnumType(HostInterface.Protocol.class)
     @XmlElement()
@@ -82,6 +87,24 @@ public class BaseInitiatorParam {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @XmlElement(name = "initiator_type")
+    public String getInitiatorType() {
+        return initiatorType;
+    }
+
+    public void setInitiatorType(String initiatorType) {
+        this.initiatorType = initiatorType;
+    }
+
+    @XmlElement(name = "active_initiator_port")
+    public URI getActiveInitiatorPort() {
+        return activeInitiatorPort;
+    }
+
+    public void setActiveInitiatorPort(URI activeInitiatorPort) {
+        this.activeInitiatorPort = activeInitiatorPort;
     }
 
 }

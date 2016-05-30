@@ -741,6 +741,9 @@ public class HostService extends TaskResourceService {
                 || HostInterface.Protocol.FC.toString().equals(protocol)
                 || HostInterface.Protocol.iSCSI.toString().equals(protocol),
                 "protocol", protocol, HostInterface.Protocol.FC, HostInterface.Protocol.iSCSI);
+        String initiatorType = param.getInitiatorType() != null ?
+                param.getInitiatorType() : (initiator != null ? initiator.getInitiatorType() : null);
+        ArgValidator.checkFieldValueFromEnum(initiatorType, "initiator_type", Initiator.InitiatorType.class);
         // Validate the passed node and port based on the protocol.
         // Note that for iSCSI the node is optional.
         if (HostInterface.Protocol.FC.toString().equals(protocol)) {
@@ -770,6 +773,11 @@ public class HostService extends TaskResourceService {
                 !param.getPort().equalsIgnoreCase(initiator.getInitiatorPort()))) {
             checkDuplicateAltId(Initiator.class, "iniport", EndpointUtility.changeCase(param.getPort()),
                     "initiator", "Initiator Port");
+        }
+        if (Initiator.InitiatorType.passive == Initiator.InitiatorType.valueOf(initiatorType)) {
+            ArgValidator.checkFieldUriType(param.getActiveInitiatorPort(), Initiator.class, "active_initiator");
+            Initiator activeInitiator = _dbClient.queryObject(Initiator.class, param.getActiveInitiatorPort());
+            ArgValidator.checkEntityNotNull(activeInitiator, param.getActiveInitiatorPort(), false);
         }
     }
 
@@ -1707,7 +1715,7 @@ public class HostService extends TaskResourceService {
                          * slotIdSet.add(slotId);
                          * slotIdAvailabilityMap.put(availabilityCount,slotIdSet);
                          * }
-                         *
+                         * 
                          * Iterator<Integer> iterator = slotIdAvailabilityMap.keySet().iterator();
                          * while(iterator.hasNext()){
                          * Integer availabilityCount = iterator.next();
@@ -1980,7 +1988,7 @@ public class HostService extends TaskResourceService {
      * Method to check if the selected image is present on the
      * ComputeImageServer which is associated with the CoputeSystem
      *
-     * @param cs {@link  ComputeSystem}
+     * @param cs {@link ComputeSystem}
      * @param img {@link ComputeImage} instance selected
      * @throws APIException
      */
