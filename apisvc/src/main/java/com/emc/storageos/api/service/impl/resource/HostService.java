@@ -78,6 +78,7 @@ import com.emc.storageos.db.client.model.Host;
 import com.emc.storageos.db.client.model.Host.ProvisioningJobStatus;
 import com.emc.storageos.db.client.model.HostInterface;
 import com.emc.storageos.db.client.model.Initiator;
+import com.emc.storageos.db.client.model.Initiator.InitiatorType;
 import com.emc.storageos.db.client.model.IpInterface;
 import com.emc.storageos.db.client.model.Operation;
 import com.emc.storageos.db.client.model.Project;
@@ -691,7 +692,7 @@ public class HostService extends TaskResourceService {
             InitiatorCreateParam createParam) throws DatabaseException {
         Host host = queryObject(Host.class, id, true);
         Cluster cluster = null;
-        validateInitiatorData(createParam, null);
+        validateInitiatorData(createParam, null, id);
         // create and populate the initiator
         Initiator initiator = new Initiator();
         initiator.setHost(id);
@@ -729,8 +730,9 @@ public class HostService extends TaskResourceService {
      * @param param the input parameter
      * @param initiator the initiator being updated in case of update operation.
      *            This parameter must be null for create operations.n
+     * @param hostId
      */
-    public void validateInitiatorData(BaseInitiatorParam param, Initiator initiator) {
+    public void validateInitiatorData(BaseInitiatorParam param, Initiator initiator, URI hostId) {
         String protocol = param.getProtocol() != null ?
                 param.getProtocol() : (initiator != null ? initiator.getProtocol() : null);
         String node = param.getNode() != null ? param.getNode() :
@@ -778,6 +780,9 @@ public class HostService extends TaskResourceService {
             ArgValidator.checkFieldUriType(param.getActiveInitiatorPort(), Initiator.class, "active_initiator");
             Initiator activeInitiator = _dbClient.queryObject(Initiator.class, param.getActiveInitiatorPort());
             ArgValidator.checkEntityNotNull(activeInitiator, param.getActiveInitiatorPort(), false);
+            if (!hostId.equals(activeInitiator.getHost())) {
+                throw BadRequestException.badRequests.initiatorPortNotValid();
+            }
         }
     }
 
@@ -840,6 +845,15 @@ public class HostService extends TaskResourceService {
         initiator.setInitiatorPort(param.getPort());
         initiator.setInitiatorNode(param.getNode());
         initiator.setProtocol(param.getProtocol());
+        String initiatorType = param.getInitiatorType();
+        if (initiatorType == null || initiatorType.isEmpty()) {
+            initiator.setInitiatorType(InitiatorType.active.name());
+        } else {
+            initiator.setInitiatorType(initiatorType);
+        }
+        if (InitiatorType.passive == InitiatorType.valueOf(initiatorType)) {
+            initiator.setActiveInitiatorId(param.getActiveInitiatorPort());
+        }
 
         // Set label to the initiator port if not specified on create.
         if (initiator.getLabel() == null && param.getName() == null) {
