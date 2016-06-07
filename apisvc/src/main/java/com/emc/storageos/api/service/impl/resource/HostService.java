@@ -776,7 +776,7 @@ public class HostService extends TaskResourceService {
             checkDuplicateAltId(Initiator.class, "iniport", EndpointUtility.changeCase(param.getPort()),
                     "initiator", "Initiator Port");
         }
-        if (Initiator.InitiatorType.passive == Initiator.InitiatorType.valueOf(initiatorType)) {
+        if (initiatorType != null && Initiator.InitiatorType.passive == Initiator.InitiatorType.valueOf(initiatorType)) {
             ArgValidator.checkFieldUriType(param.getActiveInitiatorPort(), Initiator.class, "active_initiator");
             Initiator activeInitiator = _dbClient.queryObject(Initiator.class, param.getActiveInitiatorPort());
             ArgValidator.checkEntityNotNull(activeInitiator, param.getActiveInitiatorPort(), false);
