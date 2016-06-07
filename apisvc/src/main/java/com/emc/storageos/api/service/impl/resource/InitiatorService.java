@@ -145,7 +145,7 @@ public class InitiatorService extends TaskResourceService {
     public InitiatorRestRep updateInitiator(@PathParam("id") URI id,
             InitiatorUpdateParam updateParam) throws DatabaseException {
         Initiator initiator = queryObject(Initiator.class, id, true);
-        _hostService.validateInitiatorData(updateParam, initiator);
+        _hostService.validateInitiatorData(updateParam, initiator, null);
         _hostService.populateInitiator(initiator, updateParam);
         _dbClient.persistObject(initiator);
         auditOp(OperationTypeEnum.UPDATE_HOST_INITIATOR, true, null,

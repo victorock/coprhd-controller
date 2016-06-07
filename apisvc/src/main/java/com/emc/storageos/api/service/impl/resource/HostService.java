@@ -780,7 +780,7 @@ public class HostService extends TaskResourceService {
             ArgValidator.checkFieldUriType(param.getActiveInitiatorPort(), Initiator.class, "active_initiator");
             Initiator activeInitiator = _dbClient.queryObject(Initiator.class, param.getActiveInitiatorPort());
             ArgValidator.checkEntityNotNull(activeInitiator, param.getActiveInitiatorPort(), false);
-            if (!hostId.equals(activeInitiator.getHost())) {
+            if (hostId != null && !hostId.equals(activeInitiator.getHost())) {
                 throw BadRequestException.badRequests.initiatorPortNotValid();
             }
         }
