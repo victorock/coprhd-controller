@@ -74,6 +74,31 @@ public class NetworkUtil {
         return getEndpointNetworkLite(endpoint, dbClient, null);
     }
 
+    public static NetworkLite getNetworkLiteOfInitiatorPair(Initiator initiator, DbClient dbClient) {
+        NetworkLite network = null;
+        network = getEndpointNetworkLite(initiator.getInitiatorPort(), dbClient);
+        if (network == null) {
+            Initiator associatedInitiator = ExportUtils.getAssociatedInitiator(initiator, dbClient);
+            if (associatedInitiator != null) {
+                network = NetworkUtil.getEndpointNetworkLite(associatedInitiator.getInitiatorPort(), dbClient);
+            }
+        }
+
+        return network;
+    }
+
+    public static NetworkLite getNetworkLiteOfInitiatorPair(String endpoint, DbClient dbClient) {
+        NetworkLite network = null;
+        network = getEndpointNetworkLite(endpoint, dbClient);
+        if (network == null) {
+            String associatedInitiatorEndpoint = ExportUtils.getAssociatedInitiatorEndpoint(endpoint, dbClient);
+            if (associatedInitiatorEndpoint != null) {
+                network = NetworkUtil.getEndpointNetworkLite(associatedInitiatorEndpoint, dbClient);
+            }
+        }
+        return network;
+    }
+
     /**
      * Get the network that has the endpoint
      * 
@@ -126,6 +151,16 @@ public class NetworkUtil {
     public static Set<NetworkLite> getEndpointAllNetworksLite(String endpoint, DbClient dbClient) {
         Set<NetworkLite> networks = new HashSet<NetworkLite>();
         NetworkLite networkLite = getEndpointNetworkLite(endpoint, dbClient);
+        if (networkLite != null) {
+            networks.add(networkLite);
+            networks.addAll(getNetworkLiteRoutedNetworks(networkLite, dbClient));
+        }
+        return networks;
+    }
+
+    public static Set<NetworkLite> getAllNetworksForEndpoint(String endpoint, DbClient dbClient) {
+        Set<NetworkLite> networks = new HashSet<NetworkLite>();
+        NetworkLite networkLite = getNetworkLiteOfInitiatorPair(endpoint, dbClient);
         if (networkLite != null) {
             networks.add(networkLite);
             networks.addAll(getNetworkLiteRoutedNetworks(networkLite, dbClient));
@@ -521,6 +556,32 @@ public class NetworkUtil {
         List<Initiator> netInitiators = null;
         for (Initiator initiator : initiators) {
             network = NetworkUtil.getEndpointNetworkLite(initiator.getInitiatorPort(), dbClient);
+            if (network != null) {
+                netInitiators = map.get(network);
+                if (netInitiators == null) {
+                    netInitiators = new ArrayList<Initiator>();
+                    map.put(network, netInitiators);
+                }
+                netInitiators.add(initiator);
+            }
+        }
+        return map;
+    }
+
+    /**
+     * This is same as {@link NetworkUtil#getInitiatorsByNetwork(Collection, DbClient)}, except this method considers the associated
+     * initiator also.
+     * 
+     * @param initiators the collection of initiators
+     * @param dbClient
+     * @return a map of network-to-initiators
+     */
+    public static Map<NetworkLite, List<Initiator>> getNetworkToInitiatorsMap(Collection<Initiator> initiators, DbClient dbClient) {
+        Map<NetworkLite, List<Initiator>> map = new HashMap<NetworkLite, List<Initiator>>();
+        NetworkLite network = null;
+        List<Initiator> netInitiators = null;
+        for (Initiator initiator : initiators) {
+            network = NetworkUtil.getNetworkLiteOfInitiatorPair(initiator.getInitiatorPort(), dbClient);
             if (network != null) {
                 netInitiators = map.get(network);
                 if (netInitiators == null) {

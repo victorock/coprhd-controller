@@ -833,6 +833,80 @@ public class HostService extends TaskResourceService {
                 initiator.auditParameters());
         return toTask(initiator, taskId, op);
     }
+    
+    
+    /**
+     * Creates a new paired initiator for a host.
+     *
+     * @param id the URN of a ViPR Virtual Host
+     * @param createParam the details of the initiator
+     * @brief Create paired initiator for Virtual Host
+     * @return TaskResourceRep (asynchronous call)
+     * @throws DatabaseException when a database error occurs.
+     */
+    @POST
+    @Consumes({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+    @Produces({ MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON })
+    @CheckPermission(roles = { Role.TENANT_ADMIN })
+    @Path("/{id}/paired-initiators")
+    public TaskResourceRep createPairedInitiator(@PathParam("id") URI id,
+            PairedInitiatorCreateParam createParam) throws DatabaseException {
+        Host host = queryObject(Host.class, id, true);
+        Cluster cluster = null;
+        validatePairedInitiatorData(createParam);
+        // create and populate the initiator
+        Initiator firstInitiator = new Initiator();
+        Initiator secondInitiator = new Initiator();
+        firstInitiator.setHost(id);
+        firstInitiator.setHostName(host.getHostName());
+        if (!NullColumnValueGetter.isNullURI(host.getCluster())) {
+            cluster = queryObject(Cluster.class, host.getCluster(), false);
+            firstInitiator.setClusterName(cluster.getLabel());
+        }
+        firstInitiator.setId(URIUtil.createId(Initiator.class));
+        populateInitiator(firstInitiator, createParam.getFirstInitiator());
+        secondInitiator.setHost(id);
+        secondInitiator.setHostName(host.getHostName());
+        if (!NullColumnValueGetter.isNullURI(host.getCluster())) {
+            cluster = queryObject(Cluster.class, host.getCluster(), false);
+            secondInitiator.setClusterName(cluster.getLabel());
+        }
+        secondInitiator.setId(URIUtil.createId(Initiator.class));
+        populateInitiator(secondInitiator, createParam.getSecondInitiator());
+        firstInitiator.setAssociatedInitiator(secondInitiator.getId());
+        secondInitiator.setAssociatedInitiator(firstInitiator.getId());
+        _dbClient.createObject(firstInitiator);
+        _dbClient.createObject(secondInitiator);
+
+        String taskId = UUID.randomUUID().toString();
+        Operation op = _dbClient.createTaskOpStatus(Initiator.class, firstInitiator.getId(), taskId,
+                ResourceOperationTypeEnum.ADD_HOST_PAIRED_INITIATOR);
+
+        // if host in use. update export with new initiator
+        if (ComputeSystemHelper.isHostInUse(_dbClient, host.getId())
+                && (cluster == null || cluster.getAutoExportEnabled())) {
+            ComputeSystemController controller = getController(ComputeSystemController.class, null);
+            controller.addInitiatorsToExport(firstInitiator.getHost(),
+                    Arrays.asList(firstInitiator.getId(), secondInitiator.getId()), taskId);
+        } else {
+            // No updates were necessary, so we can close out the task.
+            _dbClient.ready(Initiator.class, firstInitiator.getId(), taskId);
+        }
+
+        auditOp(OperationTypeEnum.CREATE_HOST_PAIRED_INITIATOR, true, null,
+                firstInitiator.auditParameters());
+        return toTask(firstInitiator, taskId, op);
+    }
+
+    private void validatePairedInitiatorData(PairedInitiatorCreateParam createParam) {
+        validateInitiatorData(createParam.getFirstInitiator(), null);
+        validateInitiatorData(createParam.getSecondInitiator(), null);
+        if (createParam.getFirstInitiator().getPort().equalsIgnoreCase(createParam.getSecondInitiator().getPort())) {
+            throw APIException.badRequests.duplicateEntityWithField(createParam.getFirstInitiator().getPort(), "initiator_port");
+        }
+
+    }
+
 
     /**
      * Validates the create/update initiator operation input data.
@@ -1048,6 +1122,10 @@ public class HostService extends TaskResourceService {
         if (param.getBootVolume() != null) {
             host.setBootVolumeId(NullColumnValueGetter.isNullURI(param.getBootVolume()) ? NullColumnValueGetter
                     .getNullURI() : param.getBootVolume());
+        }
+        
+        if (param.getVirtualMachine() != null) {
+            host.setVirtualMachine(param.getVirtualMachine());
         }
 
     }

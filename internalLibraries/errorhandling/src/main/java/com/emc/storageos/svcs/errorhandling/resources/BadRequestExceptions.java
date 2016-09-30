@@ -280,6 +280,9 @@ public interface BadRequestExceptions {
     public BadRequestException initiatorHostsInSameOS();
 
     @DeclareServiceCode(ServiceCode.API_PARAMETER_INVALID)
+    public BadRequestException initiatorsNotBelongToSameHost(URI initiator, URI pairedInitiator);
+
+    @DeclareServiceCode(ServiceCode.API_PARAMETER_INVALID)
     public BadRequestException initiatorNotConnectedToStorage(String initiator, String storage);
 
     @DeclareServiceCode(ServiceCode.API_PARAMETER_INVALID)
@@ -2961,6 +2964,15 @@ public interface BadRequestExceptions {
     public BadRequestException bucketACLAlreadyExists(String opType, String acl);
 
     @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
+    public BadRequestException associateInitiatorMismatch(URI in, URI pIn);
+
+    @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
+    public BadRequestException associateInitiatorNotFound(URI in);
+
+    @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
+    public BadRequestException cannotAssociateInitiatorWhileHostInUse();
+
+    @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
     public BadRequestException cannotDeleteMirrorFileShareTargetWithActiveSource(URI target, URI source);
 
     @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
@@ -3111,6 +3123,7 @@ public interface BadRequestExceptions {
     @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
     public BadRequestException deactivateRPTargetNotSupported(final String string);
     
+
     @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
     public BadRequestException cannotAddProtectionWhenSnapshotsExist(final String volumeLabel);
 }

@@ -1094,7 +1094,7 @@ public class ExportUtils {
      */
     public static boolean isInitiatorInVArraysNetworks(URI virtualArrayURI, Initiator initiator, DbClient dbClient) {
         boolean foundAnAssociatedNetwork = false;
-        Set<NetworkLite> networks = NetworkUtil.getEndpointAllNetworksLite(initiator.getInitiatorPort(), dbClient);
+        Set<NetworkLite> networks = NetworkUtil.getAllNetworksForEndpoint(initiator.getInitiatorPort(), dbClient);
         if (networks == null || networks.isEmpty()) {
             // No network associated with the initiator, so it should be removed from the list
             _log.info(String.format("Initiator %s (%s) is not associated with any network.",
@@ -1970,6 +1970,47 @@ public class ExportUtils {
                 _log.info("Stale cluster references {} will be removed from Export Group {}", staleClusterURIs, exportGroup.getId());
             }
         }
+    }
+    
+    public static Initiator getAssociatedInitiator(Initiator initiator, DbClient dbClient) {
+        URI associatedInitiatorURI = initiator.getAssociatedInitiator();
+        if (!NullColumnValueGetter.isNullURI(associatedInitiatorURI)) {
+            Initiator associatedInitiator = dbClient.queryObject(Initiator.class, associatedInitiatorURI);
+            if (associatedInitiator != null && !associatedInitiator.getInactive()) {
+                return associatedInitiator;
+            }
+        }
+        return null;
+    }
+
+    public static Initiator getAssociatedInitiator(URI initiatorURI, DbClient dbClient) {
+        Initiator initiator = dbClient.queryObject(Initiator.class, initiatorURI);
+        if (initiator != null && !initiator.getInactive()) {
+            return getAssociatedInitiator(initiator, dbClient);
+        }
+
+        return null;
+    }
+
+    public static Initiator getAssociatedInitiator(String endpoint, DbClient dbClient) {
+        Initiator associatedInitiator = null;
+        Initiator initiator = getInitiator(endpoint, dbClient);
+        if (initiator != null) {
+            associatedInitiator = getAssociatedInitiator(initiator, dbClient);
+        }
+        return associatedInitiator;
+    }
+
+    public static String getAssociatedInitiatorEndpoint(String endpoint, DbClient dbClient) {
+        Initiator initiator = getInitiator(endpoint, dbClient);
+        if (initiator != null) {
+            Initiator associatedInitiator = getAssociatedInitiator(initiator, dbClient);
+            if (associatedInitiator != null) {
+                return associatedInitiator.getInitiatorPort();
+            }
+        }
+
+        return null;
     }
 
 }

@@ -163,12 +163,12 @@ public class NetworkScheduler {
      */
     private void validateZoneNameLength(String zoneName, boolean isIvrZone, String systemType) {
         // Checks for a different length for IVR zones as it should start with "LSAN" for brocade which is appended to zone name later
-        if(isIvrZone && DiscoveredDataObject.Type.brocade.name().equals(systemType)) {
-            if(zoneName.length() > BROCADE_ZONE_NAME_IVR_LENGTH) {
+        if (isIvrZone && DiscoveredDataObject.Type.brocade.name().equals(systemType)) {
+            if (zoneName.length() > BROCADE_ZONE_NAME_IVR_LENGTH) {
                 throw NetworkDeviceControllerException.exceptions.nameZoneLongerThanAllowed(zoneName, BROCADE_ZONE_NAME_IVR_LENGTH);
             }
         } else {
-            if(zoneName.length() > ZONE_NAME_LENGTH) {
+            if (zoneName.length() > ZONE_NAME_LENGTH) {
                 throw NetworkDeviceControllerException.exceptions.nameZoneLongerThanAllowed(zoneName, ZONE_NAME_LENGTH);
             }
         }
@@ -234,10 +234,9 @@ public class NetworkScheduler {
         _log.info("Placing a zone for initiator {} and port {}", initiatorPort, storagePortWwn);
 
         // do some validation
-        NetworkLite iniNet = NetworkUtil.getEndpointNetworkLite(initiatorPort, _dbClient);
+        NetworkLite iniNet = NetworkUtil.getNetworkLiteOfInitiatorPair(initiatorPort, _dbClient);
         NetworkLite portNet = getStoragePortNetwork(storagePort);
-        if (iniNet == null || portNet == null ||
-                !NetworkUtil.checkInitiatorAndPortConnected(iniNet, portNet)) {
+        if (iniNet == null || portNet == null || !NetworkUtil.checkInitiatorAndPortConnected(iniNet, portNet)) {
             _log.debug(String.format(
                     "Initiator %s could not be paired with port %s",
                     initiatorPort, storagePortWwn));
@@ -265,7 +264,7 @@ public class NetworkScheduler {
                 return null;
             }
         } else {
-            _log.debug("Check Zones flag is false. Placing a zone for initiator {} and port {}", initiatorPort, storagePortWwn);
+            _log.debug("Check Zones flag is true. Placing a zone for initiator {} and port {}", initiatorPort, storagePortWwn);
             // If the zone already exists, just return its reference
             NetworkFCZoneInfo zoneInfo = getZoneInfoForExistingZone(iniNet, initiatorPort, storagePort.getPortNetworkId(), existingZones);
             if (zoneInfo != null) {
@@ -311,7 +310,7 @@ public class NetworkScheduler {
                 networkFabricInfo.getEndPoints().addAll(endPoints);
                 networkFabricInfo.setAltNetworkDeviceId(URI.create(altNetworkSystem.getId().toString()));
                 nameZone(networkFabricInfo, networkSystem.getSystemType(), hostName, initiatorPort, storagePort, !portNet.equals(iniNet));
-            } 
+            }
             return networkFabricInfo;
         }
     }
@@ -428,11 +427,11 @@ public class NetworkScheduler {
         itFCZoneReference = _dbClient.queryIterativeObjects(FCZoneReference.class,
                 DataObjectUtils.iteratorToList(uris), true);
         if (itFCZoneReference.hasNext()) {
-        	while (itFCZoneReference.hasNext()) {
-        		list.add(itFCZoneReference.next());        		
-        	}	
+            while (itFCZoneReference.hasNext()) {
+                list.add(itFCZoneReference.next());
+            }
         } else {
-        	_log.info("No FC Zone References for key found");
+            _log.info("No FC Zone References for key {} found.", key);
         }
         return list;
     }
@@ -862,9 +861,9 @@ public class NetworkScheduler {
      */
     private List<Initiator> getInitiators(List<URI> initiatorURIs) {
         List<Initiator> initiators = new ArrayList<Initiator>();
-        Iterator<Initiator> queryIterativeInitiators = _dbClient.queryIterativeObjects(Initiator.class, initiatorURIs);    
+        Iterator<Initiator> queryIterativeInitiators = _dbClient.queryIterativeObjects(Initiator.class, initiatorURIs);
         while (queryIterativeInitiators.hasNext()) {
-        	Initiator initiator = queryIterativeInitiators.next();
+            Initiator initiator = queryIterativeInitiators.next();
             if (initiator == null || initiator.getInactive() == true) {
                 continue;
             }
