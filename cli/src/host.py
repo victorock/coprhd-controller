@@ -143,8 +143,7 @@ class Host(object):
                    'user_name': username,
                    'password': passwd,
                    'discoverable': autodiscovery,
-                   'use_ssl': usessl,
-                   'virtual_machine': isVirtual
+                   'use_ssl': usessl
                    }
 
         '''
@@ -170,6 +169,9 @@ class Host(object):
             path = tenant + "/" + project + "/" + bootvolume
             volume_id = Volume(self.__ipAddr, self.__port).volume_query(path)
             request['boot_volume'] = volume_id
+
+        if(isVirtual):
+            request['virtual_machine'] = isVirtual
 
         restapi = Host.URI_COMPUTE_HOST
         if(testconnection):
@@ -266,7 +268,7 @@ class Host(object):
             request['boot_volume'] = volume_id
 
         if(updateExports is not None):
-            hostUri = hostUri + "?update_exports=" + updateExports
+            hostUri = hostUri + "?update_exports=" + str(updateExports).lower()
 
         restapi = Host.URI_HOST_DETAILS.format(hostUri)
 
@@ -793,7 +795,7 @@ def create_parser(subcommand_parsers, common_parser):
     create_parser.add_argument('-virtual', '-v',
                                dest='virtual',
                                help='A flag to determine whether host is virtual or not',
-                               action='store_true')
+                               choices=['true', 'false'])
 
     create_parser.set_defaults(func=host_create)
 
@@ -1120,7 +1122,7 @@ def update_parser(subcommand_parsers, common_parser):
     update_parser.add_argument('-virtual', '-v',
                                dest='virtual',
                                help='A flag to determine whether host is virtual or not',
-                               action='store_true')
+                               choices=['true', 'false'])
 
     update_parser.add_argument('-updateExports', '-updateEx',
                             help="Updates the exports during host update",
@@ -1167,7 +1169,8 @@ def host_update(args):
                            args.newosversion, args.newcluster,
                            args.newdatacenter, args.vcentername,
                            args.newlabel, args.autodiscovery,
-                           args.bootvolume, args.project, args.updateExports, args.virtual)
+                           args.bootvolume, args.project,
+                           args.virtual, args.updateExports)
     except SOSError as e:
         common.format_err_msg_and_raise("update",
                                         "host", e.err_text, e.err_code)
