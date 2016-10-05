@@ -1040,7 +1040,6 @@ public class StoragePortsAssignerTest extends StoragePortsAllocatorTest {
      * @throws Exception
      */
     static void verifyPairedInitiatorSamePortAssignments(Map<Initiator, List<StoragePort>> assignments) throws Exception {
-        System.out.println("###################    inside verifyPairedInitiatorSamePortAssignments   ################### ");
         for (Initiator initiator : assignments.keySet()) {
             List<StoragePort> storagePortList = assignments.get(initiator);
             // convert to set to check storage port as same or not
@@ -1054,7 +1053,7 @@ public class StoragePortsAssignerTest extends StoragePortsAllocatorTest {
                     boolean val = storagePortSet.add(storagePort);
                     if (val) {
                         throw new Exception(String.format(
-                                "storagePort %s assig to initiator %s is not  assig to %s",
+                                "storagePort %s assigned to initiator %s is not  same as to %s",
                                 storagePort, initiator.getInitiatorPort(), assInitiator.getInitiatorPort()));
                     }
 
@@ -1072,7 +1071,6 @@ public class StoragePortsAssignerTest extends StoragePortsAllocatorTest {
      * @return List<Initiator>
      */
     static private List<Initiator> getHostPairedInitiators(int numberofPairInitiators) {
-        System.out.println("################### inside getHostInitiators");
         Host host = new Host();
         host.setHostName("host" + hostIndex++);
         host.setId(URI.create(host.getHostName()));
@@ -1110,7 +1108,7 @@ public class StoragePortsAssignerTest extends StoragePortsAllocatorTest {
     }
 
     /**
-     * Partials out the initiators against networks specified.
+     * Partials out the paired initiators against networks specified.
      * 
      * @param initiators List<Initiator>
      * @param lowNet integer (lowest network to be used like net1)
@@ -1120,14 +1118,13 @@ public class StoragePortsAssignerTest extends StoragePortsAllocatorTest {
      */
     static Map<URI, List<Initiator>> makeNet2InitiatorsPairedMap(List<Initiator> initiators, int lowNet, int highNet) {
         HashMap<URI, List<Initiator>> map = new HashMap<URI, List<Initiator>>();
-        System.out.println("################### inside makeNet2InitiatorsMap with new network");
         // Make an entry for each network.
         for (int i = lowNet; i <= highNet; i++) {
             URI net = (URI.create("net" + i));
             map.put(net, new ArrayList<Initiator>());
         }
         // Divide the initiators among the networks.
-        // Make sure that paired initiator get same port
+        // Make sure that paired initiator get same network
         int numNetworks = highNet - lowNet + 1;
         List<Initiator> pairedInitiorList = new ArrayList<Initiator>();
         for (int i = 0; i < initiators.size(); i++) {
@@ -1142,7 +1139,7 @@ public class StoragePortsAssignerTest extends StoragePortsAllocatorTest {
             Initiator pairInitiator = getAssociatedInitiatorFromList(initiator, initiators);
             map.get(net).add(pairInitiator);
             pairedInitiorList.add(pairInitiator);
-            i++;
+
         }
         return map;
     }
