@@ -2256,7 +2256,7 @@ public interface BadRequestExceptions {
 
     @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
     public BadRequestException cantChangeVpoolNotAllCGVolumes();
-
+        
     @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
     public BadRequestException cantChangeVpoolVolumeIsNotInCG();
 
@@ -3126,4 +3126,7 @@ public interface BadRequestExceptions {
 
     @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
     public BadRequestException cannotAddProtectionWhenSnapshotsExist(final String volumeLabel);
+    
+    @DeclareServiceCode(ServiceCode.API_BAD_REQUEST)
+    public BadRequestException cantMigrateNotAllRPSourceVolumesInRequest();
 }
