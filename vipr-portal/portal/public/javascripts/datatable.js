@@ -633,17 +633,20 @@ function DataTable(selector, columns) {
     
     my.selectAll = function(name) {
         var checkboxes = name ? 'input[name="'+name+'"]:checkbox' : 'input:checkbox';
-        $(checkboxes+':not(:disabled)', my.getFilteredRows()).prop('checked', true).trigger('change');
+        $(checkboxes+':not(:disabled)', my.getFilteredRows()).prop('checked', true);//.data('allChanged',true).trigger('change');
         var selectAllName = name ? 'selectAll_'+name : 'selectAll';
         $(selector + ' thead input:checkbox[name="'+selectAllName+'"]').prop('checked', true);
         my.updateSelectedFooter();
+        //$(checkboxes+':not(:disabled)', my.getFilteredRows()).data('allChanged',false);
     }
     
     my.deselectAll = function(name) {
         var checkboxes = name ? 'input[name="'+name+'"]:checkbox' : 'input:checkbox';
-        $(checkboxes, my.getFilteredRows()).prop('checked', false).trigger('change');
+        $(checkboxes, my.getFilteredRows()).prop('checked', false);//.data('allChanged',true).trigger('change');
         var selectAllName = name ? 'selectAll_'+name : 'selectAll';
         $(selector + ' thead input:checkbox[name="'+selectAllName+'"]').prop('checked', false);
+        my.updateSelectedFooter();
+        //$(checkboxes+':not(:disabled)', my.getFilteredRows()).data('allChanged',false);
     }
     
     my.setLastUpdatedField = function(field) {
