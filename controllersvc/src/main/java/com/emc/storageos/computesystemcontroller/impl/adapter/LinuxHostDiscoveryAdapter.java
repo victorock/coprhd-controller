@@ -82,7 +82,7 @@ public class LinuxHostDiscoveryAdapter extends AbstractHostDiscoveryAdapter {
             save(host);
             throw ComputeSystemControllerException.exceptions.incompatibleLinuxHostVersion(
                     getSupportedType(), version.toString(), getVersionValidator().getSuSELinuxMinimumVersion(false).toString(),
-                    getVersionValidator().getRedhatLinuxMinimumVersion(false).toString());
+                    getVersionValidator().getCentosLinuxMinimumVersion(false).toString(), getVersionValidator().getRedhatLinuxMinimumVersion(false).toString());
         }
     }
 

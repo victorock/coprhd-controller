@@ -9,8 +9,10 @@ import org.apache.commons.lang.StringUtils;
 import com.iwave.ext.command.CommandException;
 import com.iwave.ext.linux.model.LinuxVersion;
 
+public class GetCentosVersionCommand extends LinuxVersionCommand {
     private static final String PACKAGE_NOT_INSTALLED = "package centos-release is not installed";
 
+    public GetCentosVersionCommand() {
         setCommand("rpm -q --queryformat '%{VERSION}' centos-release");
     }
 
