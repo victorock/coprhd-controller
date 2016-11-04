@@ -39,7 +39,7 @@ public class LinuxVersion {
     public enum LinuxDistribution {
         SUSE("SuSE"),
         REDHAT("RHEL"),
-        CENTOS("CENTOS"),
+        CENTOS("CentOS"),
         UNKNOWN("N/A");
 
         private String name;
