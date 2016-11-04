@@ -172,7 +172,7 @@ public class ComputeSystemDiscoveryVersionValidator {
         if (forceLookup || centosVersion == null) {
             String versionProp = this.getSysProperty(CENTOS_MIN_PROP);
             if (isValidVersionNumber(versionProp)) {
-                suseVersion = new LinuxVersion(LinuxVersion.LinuxDistribution.CENTOS, versionProp);
+                centosVersion = new LinuxVersion(LinuxVersion.LinuxDistribution.CENTOS, versionProp);
             }
             else {
                 centosVersion = null;
