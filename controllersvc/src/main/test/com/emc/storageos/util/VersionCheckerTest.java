@@ -225,8 +225,8 @@ public class VersionCheckerTest {
 
     @Test
     public void testCentosLinuxHost() throws Exception {
-        noExceptionHelper("compute_centos_linux_version", "7.0");
-        noExceptionHelper("compute_centos_linux_version", "7.1");
+        noExceptionHelper("compute_centos_linux_version", "7");
+        noExceptionHelper("compute_centos_linux_version", "7.2");
         exceptionHelper("compute_centos_linux_version", "6.5");
         exceptionHelper("compute_centos_linux_version", "6");
     }

@@ -12,7 +12,7 @@ public class GetLinuxVersionLSBReleaseCommand extends LinuxVersionCommand {
 
     private static final String RHEL = "RedHatEnterpriseServer";
     private static final String SUSE = "SUSE LINUX";
-    private static final String CENTOS = "CentOS LINUX";
+    private static final String CENTOS = "CentOS";
 
     public GetLinuxVersionLSBReleaseCommand() {
         setCommand("lsb_release -a");
