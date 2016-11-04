@@ -169,20 +169,20 @@ public class ComputeSystemDiscoveryVersionValidator {
     }
 
     public LinuxVersion getCentosLinuxMinimumVersion(boolean forceLookup) {
-        if (forceLookup || suseVersion == null) {
+        if (forceLookup || centosVersion == null) {
             String versionProp = this.getSysProperty(CENTOS_MIN_PROP);
             if (isValidVersionNumber(versionProp)) {
                 suseVersion = new LinuxVersion(LinuxVersion.LinuxDistribution.CENTOS, versionProp);
             }
             else {
-                suseVersion = null;
+                centosVersion = null;
                 throw new IllegalStateException(String.format(
                         "System property for CentOS Linux Version Number(%s) is invalid - value is '%s'", CENTOS_MIN_PROP,
                         versionProp));
             }
 
         }
-        return suseVersion;
+        return centosVersion;
     }
     
     public VcenterVersion getVcenterMinimumVersion(boolean forceLookup) {
