@@ -1812,7 +1812,7 @@
         reconfigRequired : false,
         rebootRequired : false,
         controlNodeOnly : true,
-        value : "7", 
+        value : "7.0.0", 
     },
     {
         key : "compute_redhat_linux_version",
