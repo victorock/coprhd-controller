@@ -91,6 +91,9 @@ vipr_ip = common.getenv('VIPR_HOSTNAME')
 vipr_port = common.getenv('VIPR_PORT')
 vipr_ui_port = common.getenv('VIPR_UI_PORT')
 vipr_cli_dir = common.getenv('VIPR_CLI_INSTALL_DIR')
+vipr_proxy_token = common.getenv('VIPR_PROXY_TOKEN')
+vipr_username = common.getenv('VIPR_USERNAME')
+vipr_password = common.getenv('VIPR_PASSWORD')
 # parser having common arguments across all modules
 
 common_parser = argparse.ArgumentParser()
@@ -118,6 +121,11 @@ common_parser.add_argument('-cf', '-cookiefile',
                            help='Full name of cookiefile',
                            metavar='<cookiefile>',
                            dest='cookiefile')
+common_parser.add_argument('-pt', '-proxytoken',
+                           help='API Proxy Athentication Token',
+                           default=vipr_proxy_token,
+                           metavar='<proxytoken>',
+                           dest='proxytoken')
 
 # main commandline parser
 
@@ -139,7 +147,7 @@ def display_version():
 module_parsers = main_parser.add_subparsers(help='Use One Of Commands')
 
 volumegroup.volume_group_parser(module_parsers, common_parser)
-authentication.authenticate_parser(module_parsers, vipr_ip, vipr_port)
+authentication.authenticate_parser(module_parsers, vipr_ip, vipr_port, vipr_username, vipr_password, vipr_proxy_token)
 authentication.logout_parser(module_parsers, vipr_ip, vipr_port)
 authentication.authentication_parser(module_parsers, common_parser)
 approval.approval_parser(module_parsers, common_parser)

@@ -72,7 +72,7 @@ class Authentication(object):
         self.__ipAddr = ipAddr
         self.__port = port
 
-    def authenticate_user(self, username, password, cookiedir, cookiefile):
+    def authenticate_user(self, username, password, proxytoken, cookiedir, cookiefile):
         '''
         Makes REST API call to generate the cookiefile for the
         specified user after validation.
@@ -81,6 +81,7 @@ class Authentication(object):
         '''
         SEC_REDIRECT = 302
         SEC_AUTHTOKEN_HEADER = 'X-SDS-AUTH-TOKEN'
+        SEC_AUTHPROXYTOKEN_HEADER = 'X-SDS-AUTH-PROXY-TOKEN'
         LB_API_PORT = 4443
         # Port on which load-balancer/reverse-proxy listens to all incoming
         # requests for ViPR REST APIs
@@ -93,16 +94,25 @@ class Authentication(object):
 
         try:
             if(self.__port == APISVC_PORT):
-                login_response = requests.get(
-                    url, headers=self.HEADERS, verify=False,
-                    auth=(username, password), cookies=cookiejar,
-                    allow_redirects=False, timeout=common.TIMEOUT_SEC)
+                if proxytoken:
+                    self.HEADERS[SEC_AUTHPROXYTOKEN_HEADER] = proxytoken
+                    login_response = requests.get(
+                        url, headers=self.HEADERS, verify=False,
+                        cookies=cookiejar, allow_redirects=False,
+                        timeout=common.TIMEOUT_SEC)
+                else:
+                    login_response = requests.get(
+                        url, headers=self.HEADERS, verify=False,
+                        auth=(username, password), cookies=cookiejar,
+                        allow_redirects=False, timeout=common.TIMEOUT_SEC)
+
                 if(login_response.status_code == SEC_REDIRECT):
                     location = login_response.headers['Location']
                     if(not location):
                         raise SOSError(
                             SOSError.HTTP_ERR, "The redirect location of " +
                             "the authentication service is not provided")
+
                     # Make the second request
                     login_response = requests.get(
                         location, headers=self.HEADERS, verify=False,
@@ -115,11 +125,19 @@ class Authentication(object):
                             " failed to reply with 401")
 
                     # Now provide the credentials
-                    login_response = requests.get(
-                        location, headers=self.HEADERS,
-                        auth=(username, password), verify=False,
-                        cookies=cookiejar, allow_redirects=False,
-                        timeout=common.TIMEOUT_SEC)
+                    if proxytoken:
+                        self.HEADERS[SEC_AUTHPROXYTOKEN_HEADER] = proxytoken
+                        login_response = requests.get(
+                            url, headers=self.HEADERS, verify=False,
+                            cookies=cookiejar, allow_redirects=False,
+                            timeout=common.TIMEOUT_SEC)
+                    else:
+                        login_response = requests.get(
+                            location, headers=self.HEADERS,
+                            auth=(username, password), verify=False,
+                            cookies=cookiejar, allow_redirects=False,
+                            timeout=common.TIMEOUT_SEC)
+
                     if(not login_response.status_code == SEC_REDIRECT):
                         raise SOSError(
                             SOSError.HTTP_ERR,
@@ -135,7 +153,9 @@ class Authentication(object):
                         details_str = self.extract_error_detail(login_response)
                         raise SOSError(SOSError.HTTP_ERR,
                                        "The token is not generated" +
-                                       " by authentication service." + details_str)
+                                       " by authentication service." +
+                                       details_str)
+
                     # Make the final call to get the page with the token
                     newHeaders = self.HEADERS
                     newHeaders[SEC_AUTHTOKEN_HEADER] = authToken
@@ -148,7 +168,10 @@ class Authentication(object):
                             SOSError.HTTP_ERR, "Login failure code: " +
                             str(login_response.status_code) + " Error: " +
                             login_response.text)
+
             elif(self.__port == LB_API_PORT):
+                if proxytoken:
+                    self.HEADERS[SEC_AUTHPROXYTOKEN_HEADER] = proxytoken
                 login_response = requests.get(
                     url, headers=self.HEADERS, verify=False,
                     cookies=cookiejar, allow_redirects=False)
@@ -172,7 +195,8 @@ class Authentication(object):
                 details_str = self.extract_error_detail(login_response)
                 raise SOSError(
                     SOSError.HTTP_ERR,
-                    "The token is not generated by authentication service."+details_str)
+                    "The token is not generated by authentication service." +
+                    details_str)
 
             if (login_response.status_code != requests.codes['ok']):
                 error_msg = None
@@ -325,7 +349,7 @@ class Authentication(object):
         specified user after validation.
         Returns:  SUCCESS OR FAILURE
         '''
-        
+
         domainlist_array = domains.split(',')
         urlslist_array = url.split(',')
 
@@ -364,12 +388,12 @@ class Authentication(object):
             whitelist_array = []
             whitelist_array = whitelist.split(',')
             parms['group_whitelist_values'] = whitelist_array
-            
+
         if(groupobjectclasses is not None and groupobjectclasses is not ""):
             groupobjectclasses_array = []
             groupobjectclasses_array = groupobjectclasses.split(',')
             parms['group_object_class'] = groupobjectclasses_array
-        
+
         if(groupmemberattributes is not None and groupmemberattributes is not ""):
             groupmemberattributes_array = []
             groupmemberattributes_array = groupmemberattributes.split(',')
@@ -481,7 +505,7 @@ class Authentication(object):
 		    dictobj = json.loads(profile)
 		    dictobj_final = dict()
 		    dictobj_final['authnprovider'] = dictobj
-	            
+
 		    res = common.dict2xml(dictobj_final)
 		    return res.display()
                 return profile
@@ -650,7 +674,7 @@ class Authentication(object):
 
         if(autoRegCoprHDNImportOSProjects is not None):
             parms['autoreg_coprhd_import_osprojects'] = autoRegCoprHDNImportOSProjects
-        
+
         if(searchbase is not None):
             parms['search_base'] = searchbase
 
@@ -771,7 +795,7 @@ class Authentication(object):
                      'values' : values.split(',')}
         attributes = []
         attributes.append(attribute)
-        
+
         parms = {'label': name,
                  'domain': domain,
                  'attributes': attributes}
@@ -833,16 +857,17 @@ class Authentication(object):
         user_groups_uri = self.list_user_group()
 
         for usergrouopuri in user_groups_uri:
-            usergrouop = self.show_user_group_by_uri(usergrouopuri['id'], False)
+            usergrouop = self.show_user_group_by_uri(
+                            usergrouopuri['id'], False)
 
             if ((usergrouop) and (usergrouop['name'].lower() == name.lower())):
                 if(xml):
                     usergrouop = self.show_user_group_by_uri(
-                    usergrouopuri['id'], True)
+                        usergrouopuri['id'], True)
 		    dictobj = json.loads(usergrouop)
 		    dictobj_final = dict()
 		    dictobj_final['usergroup'] = dictobj
-	            
+
 		    res = common.dict2xml(dictobj_final)
 		    return res.display()
                 return usergrouop
@@ -858,7 +883,7 @@ class Authentication(object):
         Returns:
             Values of the attribute that matches with the key.
         '''
-        
+
         attributes = usergroup['attributes']
         existingvalues = []
         for attribute in attributes:
@@ -879,16 +904,19 @@ class Authentication(object):
 
         existingvalues = self.find_attribute_from_user_group(key, usergroup)
         if len(existingvalues) != 0:
-            raise SOSError(SOSError.NOT_FOUND_ERR,
-                       "User Group '" + name + "' already contains attribute with key '" + key +
-                           "'. Use user-group-add-values or user-group-remove-values CLIs " +
-                           "respectively to add or remove values from an existing attribute of an User Group.")
+            raise SOSError(
+                SOSError.NOT_FOUND_ERR,
+                "User Group '" + name +
+                "' already contains attribute with key '" + key + "'." +
+                "Use user-group-add-values or user-group-remove-values CLIs " +
+                "respectively to add or remove values from an existing" +
+                " attribute of an User Group.")
 
         attribute = {'key' : key,
                      'values' : values.split(',')}
         attributes = []
         attributes.append(attribute)
-        
+
         parms = {'label': name,
                  'domain': usergroup['domain'],
                  'add_attributes': attributes}
@@ -916,15 +944,15 @@ class Authentication(object):
             raise SOSError(SOSError.NOT_FOUND_ERR,
                        "User Group '" +
                        name + "' does not contain attribute with key '" + key + "'.")
-            
+
         newvalues = existingvalues
         newvalues.extend(values.split(','))
-        
+
         attribute = {'key' : key,
                      'values' : newvalues}
         attributes = []
         attributes.append(attribute)
-        
+
         parms = {'label': name,
                  'domain': usergroup['domain'],
                  'add_attributes': attributes}
@@ -985,12 +1013,12 @@ class Authentication(object):
 
         newvalues = set(existingvalues) - set(values.split(','))
         newvalues = list(newvalues)
-                
+
         attribute = {'key' : key,
                      'values' : newvalues}
         attributes = []
         attributes.append(attribute)
-        
+
         parms = {'label': name,
                  'domain': usergroup['domain'],
                  'add_attributes': attributes}
@@ -1001,7 +1029,7 @@ class Authentication(object):
             self.__ipAddr, self.__port, "PUT",
             Authentication.URI_USER_GROUP_ID.format(usergroup_id),
             body)
-    
+
     def query_user_group(self, name):
         '''
         Makes REST API call to query user group
@@ -1227,7 +1255,7 @@ def update_authentication_provider(args):
     except (ConfigParser.ParsingError, ConfigParser.Error) as e:
         common.format_err_msg_and_raise("update", "authentication provider",
                                         str(e), SOSError.VALUE_ERR)
-        
+
 def update_keystone_provider(config, sectioniter, mode, obj):
     managerdn = get_attribute_value(config, sectioniter, 'managerdn')
     add_urls = config.get(sectioniter, "add-urls")
@@ -1343,17 +1371,19 @@ def list_authentication_provider(args):
 def authenticate_user(args):
     obj = Authentication(args.ip, args.port)
     try:
-        if (args.username):
+
+        if (args.username) and (not args.proxytoken):
             if sys.stdin.isatty():
                 passwd_user = getpass.getpass(prompt="Password : ")
             else:
                 passwd_user = sys.stdin.readline().rstrip()
-        else:
+        else if (not args.proxytoken):
             raise SOSError(SOSError.CMD_LINE_ERR,
                            args.username + " : invalid username")
-        res = obj.authenticate_user(args.username, passwd_user, args.cookiedir,
+        res = obj.authenticate_user(args.username, passwd_user,
+                                    args.proxytoken, args.cookiedir,
                                     args.cookiefile)
-        print res                            
+        print res
         # check the target version for upgrade.
         common.COOKIE = None
         from sysmanager import Upgrade
@@ -1383,7 +1413,7 @@ def authenticate_user(args):
         raise e
 
 
-def authenticate_parser(parent_subparser, sos_ip, sos_port):
+def authenticate_parser(parent_subparser, sos_ip, sos_port, sos_username, sos_password, sos_token):
     # main authentication parser
 
     authenticate_parser = parent_subparser.add_parser(
@@ -1409,6 +1439,18 @@ def authenticate_parser(parent_subparser, sos_ip, sos_port):
         default=sos_port,
         dest='port',
         help='port number of ViPR')
+    authenticate_parser.add_argument(
+        '-proxytoken', '-pt',
+        metavar='<proxytoken>',
+        default=sos_token,
+        dest='proxytoken',
+        help='token ID for login')
+    authenticate_parser.add_argument(
+        '-password', '-pw',
+        metavar='<password>',
+        default=sos_password,
+        dest='password',
+        help='password for login')
 
     mandatory_args = authenticate_parser.add_argument_group(
         'mandatory arguments')
@@ -1726,7 +1768,7 @@ def add_user_group_parser(subcommand_parsers, common_parser):
         help='attribute values',
         dest='values',
         required=True)
-    
+
     add_user_group_parser.set_defaults(func=add_user_group)
 
 def add_user_group(args):
@@ -1792,7 +1834,7 @@ def user_group_add_attribute_parser(subcommand_parsers, common_parser):
         help='attribute values',
         dest='values',
         required=True)
-    
+
     user_group_add_attribute_parser.set_defaults(func=user_group_add_attribute)
 
 def user_group_add_attribute(args):
@@ -1857,7 +1899,7 @@ def user_group_add_values_parser(subcommand_parsers, common_parser):
         help='attribute values to add',
         dest='values',
         required=True)
-    
+
     user_group_add_values_parser.set_defaults(func=user_group_add_values)
 
 def user_group_add_values(args):
@@ -1915,7 +1957,7 @@ def user_group_remove_attribute_parser(subcommand_parsers, common_parser):
         help='attribute keys to remove',
         dest='keys',
         required=True)
-    
+
     user_group_remove_attribute_parser.set_defaults(func=user_group_remove_attribute)
 
 def user_group_remove_attribute(args):
@@ -1980,7 +2022,7 @@ def user_group_remove_values_parser(subcommand_parsers, common_parser):
         help='attribute values to remove',
         dest='values',
         required=True)
-    
+
     user_group_remove_values_parser.set_defaults(func=user_group_remove_values)
 
 def user_group_remove_values(args):
@@ -2012,7 +2054,7 @@ def user_group_remove_values(args):
     except (ConfigParser.ParsingError, ConfigParser.Error) as e:
         common.format_err_msg_and_raise("remove values from", "user group attribute",
                                         str(e), SOSError.VALUE_ERR)
-        
+
 def show_user_group_parser(subcommand_parsers, common_parser):
     # show command parser
     show_user_group_parser = subcommand_parsers.add_parser(
@@ -2166,5 +2208,3 @@ def authentication_parser(parent_subparser, common_parser):
     delete_user_group_parser(subcommand_parsers, common_parser)
 
     list_user_group_parser(subcommand_parsers, common_parser)
-
-
